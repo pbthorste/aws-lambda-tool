@@ -11,8 +11,11 @@ all: tools build
 tools:
 	go get -u -v "github.com/mitchellh/gox"
 
+
+
 build:
 	@mkdir -p bin/
+	go get -t ./...
 	go test -v ./...
 	go build ${LDFLAGS} -o bin/${NAME} cmd/lambdadeploy/main.go
 
