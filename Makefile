@@ -13,6 +13,7 @@ tools:
 
 build:
 	@mkdir -p bin/
+	go test -v ./...
 	go build ${LDFLAGS} -o bin/${NAME} cmd/lambdadeploy/main.go
 
 xbuild: clean
