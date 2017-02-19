@@ -8,6 +8,9 @@ import (
 	"errors"
 	"io/ioutil"
 )
+var (
+	version string
+)
 
 func check(e error) {
 	if e != nil {
@@ -19,7 +22,7 @@ func main() {
 
 	app := cli.NewApp()
 	app.Name = "lambda-deploy (lambdadeploy)"
-	app.Version = "1.0.0"
+	app.Version = version
 	app.Usage = "Deploys Amazon Lambda Functions"
 	app.Flags = []cli.Flag {
 		cli.BoolFlag{
