@@ -1,0 +1,6 @@
+lambda:
+  function_name: python-hello
+  description: python hello world
+  handler: python_hello.handler
+  runtime: python2.7
+  role: arn:aws:iam::<account id>:role/basic-lambda-role
