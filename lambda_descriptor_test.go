@@ -4,12 +4,36 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/aws"
+	"io/ioutil"
 )
 
 func TestLoadDescriptor(t *testing.T) {
 	fileName := "./testdata/test1/lambda-desc.yml"
 	lambdaDesc := LoadDescriptorFile(fileName)
 	assert.Equal(t, lambdaDesc.Function_name, "python-hello", "should be equal")
+}
+
+func TestLoadDescriptorNoVpc(t *testing.T) {
+	fileName := "./testdata/test1/lambda-desc.yml"
+	lambdaDesc := LoadDescriptorFile(fileName)
+	assert.Nil(t,lambdaDesc.Vpc_config, "should be nil")
+}
+
+func TestLoadDescriptorWithVpc(t *testing.T) {
+	fileName := "./testdata/descriptors/vpc-descriptor.yml"
+	lambdaDesc := LoadDescriptorFile(fileName)
+	assert.NotNil(t,lambdaDesc.Vpc_config, "should not be nil")
+	assert.Len(t, (lambdaDesc.Vpc_config).Subnet_ids, 2)
+	assert.Len(t, (lambdaDesc.Vpc_config).Security_group_ids, 2)
+}
+
+func TestLoadDescriptorWithBadVpc1(t *testing.T) {
+	fileName := "./testdata/descriptors/vpc-descriptor-bad1.yml"
+	data, err := ioutil.ReadFile(fileName)
+	check(err)
+	lambdaParent := unmarshalDescriptor(data)
+	error := lambdaParent.Lambda.Validate()
+	assert.Error(t, error, "There should be an error ")
 }
 
 

@@ -34,6 +34,12 @@ type LambdaFunctionDesc struct {
 	Timeout int
 	Publish bool  //default for bool is false, which fits in this case
 	Environment map[string]string
+	Vpc_config *LambdaVpcConfig
+}
+
+type LambdaVpcConfig struct {
+	Subnet_ids []string
+	Security_group_ids []string
 }
 
 func (l *LambdaFunctionDesc) SetDefaults() {
@@ -58,6 +64,14 @@ func (l *LambdaFunctionDesc) Validate() error {
 	}
 	if l.Role == "" {
 		errorList = append(errorList, "Missing role")
+	}
+	if l.Vpc_config != nil {
+		if len(l.Vpc_config.Security_group_ids) < 1 {
+			errorList = append(errorList, "There must be at least 1 vpc security group id")
+		}
+		if len(l.Vpc_config.Subnet_ids) < 1 {
+			errorList = append(errorList, "There must be at least 1 vpc subnet id")
+		}
 	}
 	if len(errorList) > 0 {
 		return errors.New("Descriptor error: " + strings.Join(errorList, ","))
@@ -148,12 +162,17 @@ func LoadDescriptorFile(filename string) (*LambdaFunctionDesc) {
 	return LoadDescriptor(data)
 }
 
-func LoadDescriptor(contents []byte) (*LambdaFunctionDesc) {
+func unmarshalDescriptor(contents []byte) (*LambdaDescriptor) {
 	lambdaParent := LambdaDescriptor{}
 	err := yaml.Unmarshal([]byte(contents), &lambdaParent)
 	check(err)
+	return &lambdaParent
+}
+
+func LoadDescriptor(contents []byte) (*LambdaFunctionDesc) {
+	lambdaParent := unmarshalDescriptor(contents)
 	lambdaParent.Lambda.SetDefaults()
-	err = lambdaParent.Lambda.Validate()
+	err := lambdaParent.Lambda.Validate()
 	check(err)
 	return &lambdaParent.Lambda
 }
