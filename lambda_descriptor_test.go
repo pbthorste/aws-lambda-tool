@@ -140,3 +140,69 @@ func TestCompareValidate2(t *testing.T) {
 	err := desc.Validate()
 	assert.NotNil(t, err, "There should be an error here")
 }
+
+
+func TestCompareVpcDescriptorHasNone(t *testing.T) {
+	lambdaDesc := LambdaFunctionDesc{Function_name:"my-function"}
+	response := lambda.VpcConfigResponse{}
+	_, isDifferent := lambdaDesc.CompareVpcConfig(&response)
+	assert.True(t, isDifferent, "Should be different")
+}
+
+
+func TestCompareVpcBothHave(t *testing.T) {
+	lambdaDesc := LambdaFunctionDesc{Function_name:"my-function"}
+	newVpc := LambdaVpcConfig{}
+	lambdaDesc.Vpc_config = &newVpc
+	response := lambda.VpcConfigResponse{}
+	_, isDifferent := lambdaDesc.CompareVpcConfig(&response)
+	assert.False(t, isDifferent, "Should not be different")
+}
+
+func TestCompareVpcBothHaveSameValue(t *testing.T) {
+	lambdaDesc := LambdaFunctionDesc{Function_name:"my-function"}
+	newVpc := LambdaVpcConfig{
+		Security_group_ids: []string{"sg1"},
+		Subnet_ids: []string{"sub1"},
+	}
+	lambdaDesc.Vpc_config = &newVpc
+	response := lambda.VpcConfigResponse{
+		SecurityGroupIds: aws.StringSlice([]string{"sg1"}),
+		SubnetIds: aws.StringSlice([]string{"sub1"}),
+	}
+
+	_, isDifferent := lambdaDesc.CompareVpcConfig(&response)
+	assert.False(t, isDifferent, "Should not be different")
+}
+
+func TestCompareVpcBothHaveDiffSg(t *testing.T) {
+	lambdaDesc := LambdaFunctionDesc{Function_name:"my-function"}
+	newVpc := LambdaVpcConfig{
+		Security_group_ids: []string{"sg1"},
+		Subnet_ids: []string{"sub1"},
+	}
+	lambdaDesc.Vpc_config = &newVpc
+	response := lambda.VpcConfigResponse{
+		SecurityGroupIds: aws.StringSlice([]string{"sg2"}),
+		SubnetIds: aws.StringSlice([]string{"sub1"}),
+	}
+
+	_, isDifferent := lambdaDesc.CompareVpcConfig(&response)
+	assert.True(t, isDifferent, "Should be different")
+}
+
+func TestCompareVpcBothHaveDiffSub(t *testing.T) {
+	lambdaDesc := LambdaFunctionDesc{Function_name:"my-function"}
+	newVpc := LambdaVpcConfig{
+		Security_group_ids: []string{"sg1"},
+		Subnet_ids: []string{"sub1"},
+	}
+	lambdaDesc.Vpc_config = &newVpc
+	response := lambda.VpcConfigResponse{
+		SecurityGroupIds: aws.StringSlice([]string{"sg1"}),
+		SubnetIds: aws.StringSlice([]string{"sub2"}),
+	}
+
+	_, isDifferent := lambdaDesc.CompareVpcConfig(&response)
+	assert.True(t, isDifferent, "Should be different")
+}

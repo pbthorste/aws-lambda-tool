@@ -127,6 +127,19 @@ func (d *LambdaFunctionDesc) CompareConfig(functionConfig *lambda.FunctionConfig
 			isDifferent = true
 		}
 	}
+	if(functionConfig.VpcConfig == nil && d.Vpc_config != nil) {
+		input.SetVpcConfig(&lambda.VpcConfig{
+			SecurityGroupIds: aws.StringSlice(d.Vpc_config.Security_group_ids),
+			SubnetIds: aws.StringSlice(d.Vpc_config.Subnet_ids),
+		})
+		isDifferent = true
+	}
+	if(functionConfig.VpcConfig != nil) {
+		if newVpc, isDiff := d.CompareVpcConfig(functionConfig.VpcConfig); isDiff {
+			input.SetVpcConfig(newVpc)
+			isDifferent = true
+		}
+	}
 	err := input.Validate()
 	check(err)
 	return &input, isDifferent
@@ -154,6 +167,55 @@ func (d *LambdaFunctionDesc) CompareEnvironmentConfig(other *lambda.EnvironmentR
 	} else {
 		return aws.StringMap(d.Environment), isDifferent
 	}
+}
+
+func (d *LambdaFunctionDesc) CompareVpcConfig(other *lambda.VpcConfigResponse) (*lambda.VpcConfig, bool) {
+	isDifferent := false
+	if other == nil && d.Vpc_config == nil {
+		isDifferent = false
+	} else if other != nil && d.Vpc_config == nil {
+		// returning empty config will erase it on aws
+		return &lambda.VpcConfig{}, true
+	} else if len(d.Vpc_config.Subnet_ids) != len(other.SubnetIds) ||
+	   len(d.Vpc_config.Security_group_ids) != len(other.SecurityGroupIds) {
+		isDifferent = true
+	}
+	if len(d.Vpc_config.Subnet_ids) == len(other.SubnetIds) &&
+		len(d.Vpc_config.Security_group_ids) == len(other.SecurityGroupIds) {
+
+		if !compareSlices(d.Vpc_config.Subnet_ids, other.SubnetIds ) {
+			isDifferent = true
+		}
+		if !compareSlices(d.Vpc_config.Security_group_ids, other.SecurityGroupIds ) {
+			isDifferent = true
+		}
+	}
+
+	if !isDifferent {
+		return nil, isDifferent
+	} else {
+		return &lambda.VpcConfig{
+			SecurityGroupIds: aws.StringSlice(d.Vpc_config.Security_group_ids),
+			SubnetIds: aws.StringSlice(d.Vpc_config.Subnet_ids),
+		}, isDifferent
+	}
+}
+
+func compareSlices(descriptor []string, other []*string) (bool) {
+	isSame := true
+	for _,val1 := range descriptor {
+		found := false
+		for _, val2 := range other {
+			if val1 == *val2 {
+				found = true
+				break
+			}
+		}
+		if found == false {
+			isSame = false
+		}
+	}
+	return  isSame
 }
 
 func LoadDescriptorFile(filename string) (*LambdaFunctionDesc) {

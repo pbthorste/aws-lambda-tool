@@ -76,6 +76,12 @@ func createNewLambda(client *lambda.Lambda, descriptor *LambdaFunctionDesc, zipf
 			Variables: aws.StringMap(descriptor.Environment),
 		}
 	}
+	if descriptor.Vpc_config != nil {
+		params.VpcConfig = &lambda.VpcConfig{
+			SecurityGroupIds: aws.StringSlice(descriptor.Vpc_config.Security_group_ids),
+			SubnetIds: aws.StringSlice(descriptor.Vpc_config.Subnet_ids),
+		}
+	}
 	fmt.Println("Uploading lambda function")
 	_, err := client.CreateFunction(params)
 	if err != nil {
