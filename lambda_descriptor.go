@@ -179,8 +179,7 @@ func (d *LambdaFunctionDesc) CompareVpcConfig(other *lambda.VpcConfigResponse) (
 	} else if len(d.Vpc_config.Subnet_ids) != len(other.SubnetIds) ||
 	   len(d.Vpc_config.Security_group_ids) != len(other.SecurityGroupIds) {
 		isDifferent = true
-	}
-	if len(d.Vpc_config.Subnet_ids) == len(other.SubnetIds) &&
+	} else if len(d.Vpc_config.Subnet_ids) == len(other.SubnetIds) &&
 		len(d.Vpc_config.Security_group_ids) == len(other.SecurityGroupIds) {
 
 		if !compareSlices(d.Vpc_config.Subnet_ids, other.SubnetIds ) {

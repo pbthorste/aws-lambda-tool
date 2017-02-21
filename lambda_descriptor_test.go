@@ -102,6 +102,20 @@ func TestCompareEnvironmentBothHaveSameKeyButDifferentVal(t *testing.T) {
 	assert.Equal(t, "value", *result["key"])
 }
 
+func TestCompareEnvironmentBothHaveDifferentKeys(t *testing.T) {
+	lambdaDesc := LambdaFunctionDesc{Function_name:"my-function"}
+	newEnv := make(map[string]string)
+	newEnv["key1"] = "value1"
+	lambdaDesc.Environment = newEnv
+	response := lambda.EnvironmentResponse{}
+	otherEnv := make(map[string]string)
+	otherEnv["key2"] = "value1"
+	response.Variables = aws.StringMap(otherEnv)
+	result, isDifferent := lambdaDesc.CompareEnvironmentConfig(&response)
+	assert.True(t, isDifferent, "Should be different")
+	assert.Equal(t, "value1", *result["key1"])
+}
+
 func TestCompareEnvironmentOtherHasMoreKeys(t *testing.T) {
 	lambdaDesc := LambdaFunctionDesc{Function_name:"my-function"}
 	newEnv := make(map[string]string)
@@ -141,7 +155,6 @@ func TestCompareValidate2(t *testing.T) {
 	assert.NotNil(t, err, "There should be an error here")
 }
 
-
 func TestCompareVpcDescriptorHasNone(t *testing.T) {
 	lambdaDesc := LambdaFunctionDesc{Function_name:"my-function"}
 	response := lambda.VpcConfigResponse{}
@@ -149,6 +162,12 @@ func TestCompareVpcDescriptorHasNone(t *testing.T) {
 	assert.True(t, isDifferent, "Should be different")
 }
 
+func TestCompareVpcDescriptorBothNil(t *testing.T) {
+	lambdaDesc := LambdaFunctionDesc{Function_name:"my-function"}
+	var response *lambda.VpcConfigResponse
+	_, isDifferent := lambdaDesc.CompareVpcConfig(response)
+	assert.False(t, isDifferent, "Should be the same")
+}
 
 func TestCompareVpcBothHave(t *testing.T) {
 	lambdaDesc := LambdaFunctionDesc{Function_name:"my-function"}
@@ -196,6 +215,22 @@ func TestCompareVpcBothHaveDiffSub(t *testing.T) {
 	newVpc := LambdaVpcConfig{
 		Security_group_ids: []string{"sg1"},
 		Subnet_ids: []string{"sub1"},
+	}
+	lambdaDesc.Vpc_config = &newVpc
+	response := lambda.VpcConfigResponse{
+		SecurityGroupIds: aws.StringSlice([]string{"sg1"}),
+		SubnetIds: aws.StringSlice([]string{"sub2"}),
+	}
+
+	_, isDifferent := lambdaDesc.CompareVpcConfig(&response)
+	assert.True(t, isDifferent, "Should be different")
+}
+
+func TestCompareVpcBothHaveDiffSub2(t *testing.T) {
+	lambdaDesc := LambdaFunctionDesc{Function_name:"my-function"}
+	newVpc := LambdaVpcConfig{
+		Security_group_ids: []string{"sg1"},
+		Subnet_ids: []string{"sub1", "sub2"},
 	}
 	lambdaDesc.Vpc_config = &newVpc
 	response := lambda.VpcConfigResponse{

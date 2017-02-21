@@ -18,22 +18,15 @@ import (
 func LambdaDeploy(profile, region, zipfile string, descriptor *LambdaFunctionDesc) {
 	svc := SetupLambdaClient(profile, region)
 	getFunctionInput := lambda.GetFunctionInput{FunctionName: &(descriptor.Function_name)}
-	exists := true
 	result, err := svc.GetFunction(&getFunctionInput)
-	if err != nil {
-		if strings.Contains(err.Error(), "ResourceNotFoundException") {
-			fmt.Println("Lambda function is not deployed")
-			exists = false
-		} else {
-			panic(err)
-		}
-	}
-	if exists {
+
+	if checkIfLambdaIsDeployed(err) {
 		fmt.Println("The function already exists")
 		amazonSha := *(result.Configuration.CodeSha256)
 		if amazonSha == Base64sha256(zipfile) {
 			fmt.Println("Your zipfile and the uploaded one are identical")
 		} else {
+			fmt.Println("Uploading lambda function")
 			updateExistingCode(svc, descriptor, zipfile)
 		}
 		configDiff, isDifferent := descriptor.CompareConfig(result.Configuration)
@@ -45,10 +38,21 @@ func LambdaDeploy(profile, region, zipfile string, descriptor *LambdaFunctionDes
 			check(err)
 			fmt.Println("Config has been updated, it is now:", result)
 		}
-
-	}
-	if !exists {
+	} else {
+		fmt.Println("Lambda function is not deployed")
 		createNewLambda(svc, descriptor, zipfile)
+	}
+}
+
+func checkIfLambdaIsDeployed(getFunctionError error) (bool) {
+	if getFunctionError == nil {
+		return true
+	} else {
+		if strings.Contains(getFunctionError.Error(), "ResourceNotFoundException") {
+			return false
+		} else {
+			panic(getFunctionError)
+		}
 	}
 }
 
